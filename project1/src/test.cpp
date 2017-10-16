@@ -1,8 +1,8 @@
 #include <fstream>
 #include <iostream>
 #include <string.h>
+#include <sys/time.h>
 #include <vector>
-
 using namespace std;
 
 int cmp_str(string a, string b) {
@@ -20,11 +20,7 @@ void test(vector<string> &h) {
 }
 
 int main() {
-    /*    string test[3] = {"", "he", "hen"};
-    cout << sizeof(test) / sizeof(*test) << endl;
-    cout << *(test + 2) << endl;
-*/
 
-    cout << sizeof(unsigned int) << endl;
+    cout << string(100) << endl;
     return 0;
 }

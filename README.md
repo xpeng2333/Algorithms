@@ -1,2 +1,2 @@
-# Alogorithms
-算法基础课程实验
+# Algorithms
+>算法基础课程实验

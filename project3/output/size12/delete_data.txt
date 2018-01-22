@@ -1,0 +1,6 @@
+os_select:
+35
+30
+selectkth:
+35
+30

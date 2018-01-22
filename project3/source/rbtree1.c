@@ -1,8 +1,9 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <sys/time.h>
 #include <time.h>
 
-enum node_colors { RED, BLACK };
+enum node_colors { BLACK, RED };
 
 struct node {
     enum node_colors color;
@@ -31,8 +32,8 @@ void left_rotate(struct node *x) {
         x->p->right = y;
     y->left = x;
     x->p = y;
-    y->size = x->size;                            
-    x->size = x->left->size + x->right->size + 1; 
+    y->size = x->size;                            // y的size置为x的size
+    x->size = x->left->size + x->right->size + 1; //重新计算x的size
 }
 
 void right_rotate(struct node *x) {
@@ -98,7 +99,7 @@ void rb_insert(struct node *z) {
     struct node *x = root;
     while (x != NIL) {
         y = x;
-        x->size++; 
+        x->size++; //插入新结点路上的size都+1
         if (z->key < x->key)
             x = x->left;
         else
@@ -114,7 +115,7 @@ void rb_insert(struct node *z) {
     z->left = NIL;
     z->right = NIL;
     z->color = RED;
-    z->size = 1; 
+    z->size = 1; //新结点的size为1
     rb_insert_fixup(z);
 }
 
@@ -202,16 +203,16 @@ void rb_delete(struct node *z) {
     struct node *x;
     enum node_colors y_original_color = y->color;
     if (z->left == NIL) {
-        rb_delete_fixup_size(y); 
+        rb_delete_fixup_size(y); //删除结点时y原位置到根的size都-1
         x = z->right;
         rb_transplant(z, z->right);
     } else if (z->right == NIL) {
-        rb_delete_fixup_size(y); 
+        rb_delete_fixup_size(y); //删除结点时y原位置到根的size都-1
         x = z->left;
         rb_transplant(z, z->left);
     } else {
         y = tree_minimum(z->right);
-        rb_delete_fixup_size(y); 
+        rb_delete_fixup_size(y); //删除结点时y原位置到根的size都-1
         y_original_color = y->color;
         x = y->right;
         if (y->p == z) {
@@ -225,7 +226,7 @@ void rb_delete(struct node *z) {
         y->left = z->left;
         y->left->p = y;
         y->color = z->color;
-        y->size = z->size; 
+        y->size = z->size; // y的新size即为z的size
     }
     if (y_original_color == BLACK)
         rb_delete_fixup(x);
@@ -287,91 +288,27 @@ void postorder(struct node *p, FILE *fp) { //后序遍历
     fprintf(fp, "%d\n", p->key);
 }
 
-void showtree(struct node *p) { //打印树的结构详细信息，用于画图
+void output(struct node *p) { //打印树的结构详细信息，用于画图
     if (p == NIL)
         return;
-    showtree(p->left);
-    printf("key=%d L=%d R=%d P=%d color=%s size=%d\n", p->key, p->left->key,
-           p->right->key, p->p->key, p->color == RED ? "RED" : "BLACK",
-           p->size);
-    showtree(p->right);
-}
-
-void swap(int *a, int *b) {
-    int temp = *a;
-    *a = *b;
-    *b = temp;
-}
-
-int partition(int *A, int p, int r, int mid) {
-    int i, j;
-    swap(A + mid, A + r);
-    i = p;
-    for (j = p; j < r; j++) {
-        if (A[j] < A[r]) {
-            swap(A + i, A + j);
-            i++;
-        }
-    }
-    swap(A + i, A + r);
-    return i;
-}
-
-int selectkth(int *A, int length, int i) {
-    int groups, pivot;
-    int j, k, t, q, p, glen;
-    int mid;
-    int temp, index;
-    int *pmid;
-    if (length == 1)
-        return A[length - 1];
-    if (length % 5 == 0)
-        groups = length / 5;
-    else
-        groups = length / 5 + 1;
-    pmid = (int *)malloc(sizeof(int) * groups);
-    index = 0;
-    for (j = 0; j < groups; j++) {
-        p = j * 5;
-        glen = p + 5;
-        for (t = p + 1; t < glen && t < length; t++) {
-            temp = A[t];
-            for (q = t - 1; q >= p && A[q] > A[q + 1]; q--)
-                swap(A + q, A + q + 1);
-            swap(A + q + 1, &temp);
-        }
-        glen = glen < length ? glen : length;
-        pmid[index++] = p + (glen - p) / 2;
-    }
-    for (t = 1; t < groups; t++) {
-        temp = pmid[t];
-        for (q = t - 1; q >= 0 && A[pmid[q]] > A[pmid[q + 1]]; q--)
-            swap(pmid + q, pmid + q + 1);
-        swap(pmid + q + 1, &temp);
-    }
-    mid = pmid[groups / 2];
-    pivot = partition(A, 0, length - 1, mid);
-    k = pivot + 1;
-    if (k == i)
-        return A[pivot];
-    else if (k < i)
-        return selectkth(A + k, length - k, i - k);
-    else
-        return selectkth(A, pivot, i);
+    output(p->left);
+    printf("  %d L=%d R=%d P=%d color=%c size=%d\n", p->key, p->left->key,
+           p->right->key, p->p->key, p->color == RED ? 'R' : 'B', p->size);
+    output(p->right);
 }
 
 int main() {
-    int scale[5] = {12, 24, 36, 48, 60};
     FILE *fp;
     int data[60];           //保存读入的数据
-    struct node *nodes[10]; //保存新建的结点
-    int i, j, k;
+    struct node *nodes[60]; //保存新建的结点
+    int i, j;
     int n;
     char path[100]; //文件名
 
     double diff, total;
+    // struct timespec start, stop;
+    // struct timeval start, stop;
     struct timespec start, stop;
-
     struct node *node1, *node2; //保存待删除的结点
 
     node_NIL.color = BLACK;
@@ -389,40 +326,27 @@ int main() {
     fclose(fp);
 
     //循环每种数据规模
-    for (k = 0; k < 5; k++) {
-        n = scale[k];
+    for (n = 20; n <= 60; n += 20) {
         sprintf(path, "../output/size%d/time1.txt", n);
         fp = fopen(path, "wt");
+
         root = NIL;
         total = 0;
-        for (i = 0; i <= n - 10; i += 10) { //每10个计时
-            for (j = 0; j < 10; j++)
-                nodes[j] = new_node(data[i + j]);   //准备要插入的结点
-            clock_gettime(CLOCK_MONOTONIC, &start); //开始计时
-            for (j = 0; j < 10; j++)
-                rb_insert(nodes[j]);
-            clock_gettime(CLOCK_MONOTONIC, &stop); //结束计时
-            diff = (stop.tv_sec - start.tv_sec) +
-                   (double)(stop.tv_nsec - start.tv_nsec) / 1000000000;
-            total += diff;
-            fprintf(fp, "%d~%d %.9fs\n", i, i + 9, diff);
-        }
-        int l = n - i;
-        if (l > 0) {
-            for (j = 0; j < l; j++) {
-                nodes[j] = new_node(data[i + j]);
-            }
-            clock_gettime(CLOCK_MONOTONIC, &start); //开始计时
-            for (j = 0; j < l; j++)
-                rb_insert(nodes[j]);
-            clock_gettime(CLOCK_MONOTONIC, &stop); //结束计时
-            diff = (stop.tv_sec - start.tv_sec) +
-                   (double)(stop.tv_nsec - start.tv_nsec) / 1000000000;
-            total += diff;
-            fprintf(fp, "%d~%d %.9fs\n", i, n, diff);
-        }
+        for (i = 0; i < n; i++)
+            nodes[i] = new_node(data[i]); //准备要插入的结点
 
-        fprintf(fp, "total %.9fs\n", total);
+        clock_gettime(CLOCK_MONOTONIC, &start); //开始计时
+        // gettimeofday(&start, NULL);
+        for (i = 0; i < n; i++)
+            rb_insert(nodes[i]);
+
+        clock_gettime(CLOCK_MONOTONIC, &stop); //结束计时
+        // gettimeofday(&stop, NULL);
+        diff = (stop.tv_sec - start.tv_sec) +
+               (double)(stop.tv_nsec - start.tv_nsec) / 1000000000;
+        // fprintf(fp, "insert %d~%d %.9fs\n", i, i + 9, diff);
+        printf("%.9f\n", diff);
+        fprintf(fp, "insert total %.9fs\n", diff);
         fclose(fp);
 
         //先序遍历
@@ -442,38 +366,51 @@ int main() {
         fp = fopen(path, "wt");
         postorder(root, fp);
         fclose(fp);
+        //找到第n/4和n/2小的结点
+        node1 = os_select(root, n / 4);
+        node2 = os_select(root, n / 2);
 
-        //找到第n/3和n/4小的结点
-        node1 = os_select(root, n / 3);
-        node2 = os_select(root, n / 4);
         sprintf(path, "../output/size%d/delete_data.txt", n);
         fp = fopen(path, "wt");
-        fprintf(fp, "os_select:\n%d\n%d\n", node1->key, node2->key);
-        fprintf(fp, "selectkth:\n%d\n%d\n", selectkth(data, n, n / 3),
-                selectkth(data, n, n / 4));
+        fprintf(fp, "%d\n%d\n", node1->key, node2->key);
         fclose(fp);
 
         sprintf(path, "../output/size%d/time2.txt", n);
         fp = fopen(path, "wt");
-        printf("%d=>before delete:\n", n);
-        showtree(root);
+        if (n == 20) { // n=20时输出树的结构用于画图
+            printf("before delete");
+            output(root);
+        }
         //删除结点计时
         clock_gettime(CLOCK_MONOTONIC, &start);
-        rb_delete(node1); //删除n/3
+        // gettimeofday(&start, NULL);
+        rb_delete(node1); //删除n/4
         clock_gettime(CLOCK_MONOTONIC, &stop);
+        // gettimeofday(&stop, NULL);
         diff = (stop.tv_sec - start.tv_sec) +
                (double)(stop.tv_nsec - start.tv_nsec) / 1000000000;
         fprintf(fp, "delete node1 %.9fs\n", diff);
-        printf("%d=>after delete node1:\n", n);
-        showtree(root);
+        if (n == 20) {
+            printf("after delete node1");
+            output(root);
+        }
         clock_gettime(CLOCK_MONOTONIC, &start);
-        rb_delete(node2); //删除n/4
+        // gettimeofday(&start, NULL);
+        rb_delete(node2); //删除n/2
         clock_gettime(CLOCK_MONOTONIC, &stop);
+        // gettimeofday(&stop, NULL);
         diff = (stop.tv_sec - start.tv_sec) +
                (double)(stop.tv_nsec - start.tv_nsec) / 1000000000;
         fprintf(fp, "delete node2 %.9fs\n", diff);
-        printf("%d=>after delete node2:\n", n);
-        showtree(root);
+        if (n == 20) {
+            printf("after delete node2");
+            output(root);
+        }
+        fclose(fp);
+
+        sprintf(path, "../output/size%d/delete_inorder.txt", n);
+        fp = fopen(path, "wt");
+        inorder(root, fp); //删除后的中序遍历
         fclose(fp);
     }
 
